@@ -1,0 +1,13 @@
+dist
+build
+node_modules
+.next
+package.json
+package-lock.json
+.env
+out
+public
+coverage
+.DS_Store
+.vercel
+next-env.d.ts
