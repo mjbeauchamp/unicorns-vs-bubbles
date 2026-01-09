@@ -40,6 +40,9 @@ export class GamePlay extends Scene {
         const unicorn = u as Phaser.Physics.Arcade.Sprite;
         const bubble = b as Phaser.Physics.Arcade.Sprite;
         this.handleBubblePop(unicorn, bubble);
+
+        // Fire a global event
+        EventBus.emit('bubble-collided');
       },
       undefined,
       this,
@@ -81,7 +84,22 @@ export class GamePlay extends Scene {
       this.bubbles.getChildren().forEach((bubble) => {
         const b = bubble as Phaser.Physics.Arcade.Sprite;
         if (b.y > this.scale.height) {
-          this.handleBubblePop(null, b);
+          const y = b.y;
+          const x = b.x;
+          // Fire a global event
+          EventBus.emit('bubble-missed');
+          b.destroy();
+          const emitter = this.add.particles(x, y, 'pop', {
+            speed: { min: 50, max: 300 },
+            scale: { start: 0.9, end: 0 },
+            lifespan: 300,
+            gravityY: 200,
+            quantity: 1,
+          });
+
+          this.time.delayedCall(400, () => {
+            emitter.destroy();
+          });
         }
       });
     }
@@ -100,6 +118,7 @@ export class GamePlay extends Scene {
   handleBubblePop(
     unicorn: Phaser.Physics.Arcade.Sprite | null,
     bubble: Phaser.Physics.Arcade.Sprite,
+    isMissedBubble?: boolean,
   ) {
     if (bubble?.body) {
       // Disable the bubble so it doesn't trigger collisions again
