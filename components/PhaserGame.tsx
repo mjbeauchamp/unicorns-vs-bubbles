@@ -1,15 +1,10 @@
 'use client';
 
-import {
-  forwardRef,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import StartGame from '@/phaser/main';
 import { EventBus } from '@/phaser/EventBus';
+import { useGame } from '@/contexts/GameContext';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -24,8 +19,9 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   { currentActiveScene },
   ref,
 ) {
-  const [score, setScore] = useState(0);
   const game = useRef<Phaser.Game | null>(null!);
+
+  const { currentScore, addPoint, missPoint } = useGame();
 
   useLayoutEffect(() => {
     if (game.current === null) {
@@ -66,36 +62,22 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   }, [currentActiveScene, ref]);
 
   useEffect(() => {
-    const onBubbleCollided = () => {
-      setScore((prev) => prev + 1);
-    };
-    const onBubbleMissed = () => {
-      setScore((prev) => {
-        const newValue = prev - 1;
-        if (newValue >= 0) {
-          return newValue;
-        }
-
-        return prev;
-      });
-    };
-
-    EventBus.on('bubble-collided', onBubbleCollided);
-    EventBus.on('bubble-missed', onBubbleMissed);
+    EventBus.on('bubble-collided', addPoint);
+    EventBus.on('bubble-missed', missPoint);
 
     return () => {
-      EventBus.removeListener('bubble-collided', onBubbleCollided);
-      EventBus.removeListener('bubble-missed', onBubbleMissed);
+      EventBus.removeListener('bubble-collided', addPoint);
+      EventBus.removeListener('bubble-missed', missPoint);
     };
   }, []);
 
   return (
-    <>
+    <div className="primary-content-container">
       <h1>
-        Score: <span>{score}</span>
+        Score: <span>{currentScore}</span>
       </h1>
       <div id="game-container"></div>
-    </>
+    </div>
   );
 });
 

@@ -17,7 +17,7 @@ function Play() {
   };
 
   return (
-    <div id="app">
+    <div className="w-[100vw]">
       <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
     </div>
   );
