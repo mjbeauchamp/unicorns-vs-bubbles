@@ -11,13 +11,19 @@ export class GamePlay extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
   scenePaused = false;
   cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+  backgroundColor?: string;
 
   constructor() {
     super('GamePlay');
   }
 
+  init(data: { backgroundColor?: string }) {
+    this.backgroundColor = data.backgroundColor ?? '#028af8';
+  }
+
   create() {
     this.camera = this.cameras.main;
+    this.camera.setBackgroundColor(this.backgroundColor);
 
     // Unicorn
     this.unicorn = this.physics.add.sprite(
@@ -173,9 +179,19 @@ export class GamePlay extends Scene {
   }
 
   levelUp(backgroundColor: string) {
-    if (this.camera) {
-      this.camera.setBackgroundColor(backgroundColor);
-    }
+    this.scene.stop();
+
+    this.scene.launch('LevelUp');
+
+    // Listen for LevelUp dismissal
+    const handler = () => {
+      EventBus.removeListener('level-up-modal-done', handler);
+
+      // Restart scene, optionally pass new background color
+      this.scene.restart({ backgroundColor });
+    };
+
+    EventBus.on('level-up-modal-done', handler);
   }
 
   gameOver() {

@@ -112,10 +112,6 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   }, [currentLevel]);
 
   const pause = () => {
-    // if (!isPaused && phaserRef.current?.scene) {
-    //   phaserRef.current.scene.pause('GamePlay');
-    //   setIsPaused(true);
-    // }
     if (!isPaused && gamePlaySceneRef.current) {
       gamePlaySceneRef.current.scene.pause('GamePlay');
       setIsPaused(true);
@@ -123,10 +119,6 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   };
 
   const resume = () => {
-    // if (isPaused && phaserRef.current?.scene) {
-    //   phaserRef.current.scene.resume('GamePlay');
-    //   setIsPaused(false);
-    // }
     if (isPaused && gamePlaySceneRef.current) {
       gamePlaySceneRef.current.scene.resume('GamePlay');
       setIsPaused(false);
@@ -136,6 +128,9 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   return (
     <div className="w-full flex flex-col items-center">
       <div className="primary-content-container relative min-w-[fit-content]">
+        <h1>
+          LEVEL: <span>{currentLevel}</span>
+        </h1>
         <h1>
           Score: <span>{currentScore}</span>
         </h1>

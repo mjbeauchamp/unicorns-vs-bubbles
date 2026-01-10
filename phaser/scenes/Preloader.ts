@@ -26,6 +26,7 @@ export class Preloader extends Scene {
     this.load.setPath('assets');
 
     this.load.image('unicorn', 'unicorn.png');
+    this.load.image('unicorn-smiling', 'unicorn-smiling.png');
     this.load.image('bubble', 'bubble.png');
     this.load.image('pop', 'bubble-pop.png');
   }
