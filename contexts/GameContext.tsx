@@ -19,7 +19,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentScore, setCurrentScore] = useState(0);
 
   const addPoint = () => {
-    console.log('BOOP!');
     setCurrentScore((prev) => {
       const next = prev + 1;
       const levelConfig = LEVELS.find((l) => l.level === currentLevel);

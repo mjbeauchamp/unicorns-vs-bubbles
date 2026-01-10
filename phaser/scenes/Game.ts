@@ -9,6 +9,7 @@ export class GamePlay extends Scene {
   logoTween: Phaser.Tweens.Tween | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
   cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+  scenePaused = false;
 
   constructor() {
     super('GamePlay');
@@ -41,7 +42,7 @@ export class GamePlay extends Scene {
         const bubble = b as Phaser.Physics.Arcade.Sprite;
         this.handleBubblePop(unicorn, bubble);
 
-        // Fire a global event
+        // Fire a collision event
         EventBus.emit('bubble-collided');
       },
       undefined,
@@ -54,6 +55,24 @@ export class GamePlay extends Scene {
       callback: this.spawnBubble,
       callbackScope: this,
       loop: true,
+    });
+
+    // Pause the scene when the tab/window loses focus
+    this.game.events.on('blur', () => {
+      if (!this.scenePaused) {
+        this.scenePaused = true;
+        this.scene.pause();
+        EventBus.emit('game-paused');
+      }
+    });
+
+    // Resume the scene when the tab/window gains focus
+    this.game.events.on('focus', () => {
+      if (this.scenePaused) {
+        this.scenePaused = false;
+        this.scene.resume();
+        EventBus.emit('game-resumed');
+      }
     });
 
     EventBus.emit('current-scene-ready', this);
@@ -152,33 +171,5 @@ export class GamePlay extends Scene {
 
   gameOver() {
     this.scene.start('GameOver');
-  }
-
-  moveLogo(reactCallback: ({ x, y }: { x: number; y: number }) => void) {
-    if (this.logoTween) {
-      if (this.logoTween.isPlaying()) {
-        this.logoTween.pause();
-      } else {
-        this.logoTween.play();
-      }
-    } else {
-      this.logoTween = this.tweens.add({
-        targets: this.unicorn,
-        x: { value: 750, duration: 3000, ease: 'Back.easeInOut' },
-        y: { value: 80, duration: 1500, ease: 'Sine.easeOut' },
-        yoyo: true,
-        repeat: -1,
-        onUpdate: () => {
-          if (reactCallback && this?.unicorn) {
-            reactCallback({
-              x: Math.floor(this.unicorn.x),
-              y: Math.floor(this.unicorn.y),
-            });
-          } else {
-            console.error('Game was not initialized correctly');
-          }
-        },
-      });
-    }
   }
 }
