@@ -8,14 +8,17 @@ export class GamePlay extends Scene {
   title: GameObjects.Text | null = null;
   logoTween: Phaser.Tweens.Tween | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
-  cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+  camera: Phaser.Cameras.Scene2D.Camera | null = null;
   scenePaused = false;
+  cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
 
   constructor() {
     super('GamePlay');
   }
 
   create() {
+    this.camera = this.cameras.main;
+
     // Unicorn
     this.unicorn = this.physics.add.sprite(
       this.scale.width / 2,
@@ -166,6 +169,12 @@ export class GamePlay extends Scene {
       this.time.delayedCall(400, () => {
         emitter.destroy();
       });
+    }
+  }
+
+  levelUp(backgroundColor: string) {
+    if (this.camera) {
+      this.camera.setBackgroundColor(backgroundColor);
     }
   }
 

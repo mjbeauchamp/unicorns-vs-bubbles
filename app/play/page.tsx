@@ -17,7 +17,7 @@ function Play() {
   };
 
   return (
-    <div className="w-[100vw] relative flex flex-col items-center">
+    <div className="w-[100vw] relative">
       <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
     </div>
   );

@@ -15,32 +15,45 @@ const GameContext = createContext<GameContextType | null>(null);
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [currentScore, setCurrentScore] = useState(0);
+  const [gameState, setGameState] = useState({
+    currentScore: 0,
+    currentLevel: 1,
+  });
 
   const addPoint = () => {
-    setCurrentScore((prev) => {
-      const next = prev + 1;
-      const levelConfig = LEVELS.find((l) => l.level === currentLevel);
+    setGameState((prev) => {
+      const { currentScore, currentLevel } = prev;
 
-      if (levelConfig && next >= levelConfig.targetScore) {
-        setCurrentLevel((l) => l + 1);
-        return 0; // reset score on level up
+      const levelConfig = LEVELS.find((l) => l.level === currentLevel);
+      let nextScore = currentScore + 1;
+      let nextLevel = currentLevel;
+
+      if (levelConfig && nextScore >= levelConfig.targetScore) {
+        nextScore = 0;
+        nextLevel = levelConfig.level + 1;
       }
 
-      return next;
+      return {
+        currentScore: nextScore,
+        currentLevel: nextLevel,
+      };
     });
   };
 
   const missPoint = () => {
-    setCurrentScore((prev) => Math.max(0, prev - 1));
+    setGameState((prev) => {
+      return {
+        ...prev,
+        currentScore: Math.max(0, prev.currentScore - 1),
+      };
+    });
   };
 
   return (
     <GameContext.Provider
       value={{
-        currentLevel,
-        currentScore,
+        currentLevel: gameState.currentLevel,
+        currentScore: gameState.currentScore,
         addPoint,
         missPoint,
       }}

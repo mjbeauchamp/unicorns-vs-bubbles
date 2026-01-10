@@ -11,6 +11,8 @@ import Phaser from 'phaser';
 import StartGame from '@/phaser/main';
 import { EventBus } from '@/phaser/EventBus';
 import { useGame } from '@/contexts/GameContext';
+import { GamePlay } from '@/phaser/scenes/Game';
+import { LEVELS } from '@/game/config/levels';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -26,26 +28,28 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   ref,
 ) {
   const [isPaused, setIsPaused] = useState(false);
-  const game = useRef<Phaser.Game | null>(null!);
+  const phaserRef = useRef<Phaser.Game | null>(null!);
+  const gamePlaySceneRef = useRef<GamePlay | null>(null);
+  const isInitialized = useRef(false);
 
-  const { currentScore, addPoint, missPoint } = useGame();
+  const { currentScore, currentLevel, addPoint, missPoint } = useGame();
 
   useLayoutEffect(() => {
-    if (game.current === null) {
-      game.current = StartGame('game-container');
+    if (phaserRef.current === null) {
+      phaserRef.current = StartGame('game-container');
 
       if (typeof ref === 'function') {
-        ref({ game: game.current, scene: null });
+        ref({ game: phaserRef.current, scene: null });
       } else if (ref) {
-        ref.current = { game: game.current, scene: null };
+        ref.current = { game: phaserRef.current, scene: null };
       }
     }
 
     return () => {
-      if (game.current) {
-        game.current.destroy(true);
-        if (game.current !== null) {
-          game.current = null;
+      if (phaserRef.current) {
+        phaserRef.current.destroy(true);
+        if (phaserRef.current !== null) {
+          phaserRef.current = null;
         }
       }
     };
@@ -53,14 +57,18 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
 
   useEffect(() => {
     const sceneReady = (scene_instance: Phaser.Scene) => {
+      if (scene_instance instanceof GamePlay) {
+        gamePlaySceneRef.current = scene_instance;
+      }
+
       if (currentActiveScene && typeof currentActiveScene === 'function') {
         currentActiveScene(scene_instance);
       }
 
       if (typeof ref === 'function') {
-        ref({ game: game.current, scene: scene_instance });
+        ref({ game: phaserRef.current, scene: scene_instance });
       } else if (ref) {
-        ref.current = { game: game.current, scene: scene_instance };
+        ref.current = { game: phaserRef.current, scene: scene_instance };
       }
     };
 
@@ -91,16 +99,36 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
     };
   }, []);
 
+  useEffect(() => {
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      return;
+    }
+
+    const levelConfig = LEVELS.find((l) => l.level === currentLevel);
+    if (levelConfig?.backgroundColor) {
+      gamePlaySceneRef.current?.levelUp(levelConfig.backgroundColor);
+    }
+  }, [currentLevel]);
+
   const pause = () => {
-    if (!isPaused) {
-      game.current?.scene.pause('GamePlay');
+    // if (!isPaused && phaserRef.current?.scene) {
+    //   phaserRef.current.scene.pause('GamePlay');
+    //   setIsPaused(true);
+    // }
+    if (!isPaused && gamePlaySceneRef.current) {
+      gamePlaySceneRef.current.scene.pause('GamePlay');
       setIsPaused(true);
     }
   };
 
   const resume = () => {
-    if (isPaused) {
-      game.current?.scene.resume('GamePlay');
+    // if (isPaused && phaserRef.current?.scene) {
+    //   phaserRef.current.scene.resume('GamePlay');
+    //   setIsPaused(false);
+    // }
+    if (isPaused && gamePlaySceneRef.current) {
+      gamePlaySceneRef.current.scene.resume('GamePlay');
       setIsPaused(false);
     }
   };
@@ -113,7 +141,7 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
         </h1>
         <button onClick={pause}>PAUSE</button>
         {isPaused && (
-          <div className="w-[100%] h-[100%] absolute top-0 left-0 z-10 bg-[rgba(255,255,255,0.5)] bg-[blue] flex justify-center items-center">
+          <div className="w-[100%] h-[100%] absolute top-0 left-0 z-10 bg-[rgba(255,255,255,0.5)] flex justify-center items-center">
             <button onClick={resume}>RESUME GAME</button>
           </div>
         )}
