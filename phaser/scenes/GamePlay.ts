@@ -1,24 +1,29 @@
 import { GameObjects, Scene } from 'phaser';
-
+import { LEVELS } from '@/game/config/levels';
 import { EventBus } from '../EventBus';
 
 export class GamePlay extends Scene {
   background: GameObjects.Image | null = null;
   unicorn: Phaser.Physics.Arcade.Sprite | null = null;
   title: GameObjects.Text | null = null;
-  logoTween: Phaser.Tweens.Tween | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
   scenePaused = false;
+  level: number = 1;
+  bubbleSpawnTimer?: Phaser.Time.TimerEvent;
   cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   backgroundColor?: string;
+  _cleanedUp = false;
+  levelUpHandler?: () => void;
 
   constructor() {
     super('GamePlay');
   }
 
-  init(data: { backgroundColor?: string }) {
+  init(data: { level: number; backgroundColor?: string }) {
     this.backgroundColor = data.backgroundColor ?? '#028af8';
+    this.level = data.level ?? 1;
+    this.scenePaused = false;
   }
 
   create() {
@@ -39,7 +44,6 @@ export class GamePlay extends Scene {
     // Bubble group
     this.bubbles = this.physics.add.group({
       classType: Phaser.Physics.Arcade.Sprite,
-      runChildUpdate: true,
     });
 
     // Collision / overlap
@@ -47,9 +51,8 @@ export class GamePlay extends Scene {
       this.unicorn,
       this.bubbles,
       (u, b) => {
-        const unicorn = u as Phaser.Physics.Arcade.Sprite;
         const bubble = b as Phaser.Physics.Arcade.Sprite;
-        this.handleBubblePop(unicorn, bubble);
+        this.handleBubblePop(bubble);
 
         // Fire a collision event
         EventBus.emit('bubble-collided');
@@ -59,29 +62,11 @@ export class GamePlay extends Scene {
     );
 
     // Spawn bubbles repeatedly
-    this.time.addEvent({
+    this.bubbleSpawnTimer = this.time.addEvent({
       delay: 1000,
       callback: this.spawnBubble,
       callbackScope: this,
       loop: true,
-    });
-
-    // Pause the scene when the tab/window loses focus
-    this.game.events.on('blur', () => {
-      if (!this.scenePaused) {
-        this.scenePaused = true;
-        this.scene.pause();
-        EventBus.emit('game-paused');
-      }
-    });
-
-    // Resume the scene when the tab/window gains focus
-    this.game.events.on('focus', () => {
-      if (this.scenePaused) {
-        this.scenePaused = false;
-        this.scene.resume();
-        EventBus.emit('game-resumed');
-      }
     });
 
     EventBus.emit('current-scene-ready', this);
@@ -143,11 +128,7 @@ export class GamePlay extends Scene {
     }
   }
 
-  handleBubblePop(
-    unicorn: Phaser.Physics.Arcade.Sprite | null,
-    bubble: Phaser.Physics.Arcade.Sprite,
-    isMissedBubble?: boolean,
-  ) {
+  handleBubblePop(bubble: Phaser.Physics.Arcade.Sprite) {
     if (bubble?.body) {
       // Disable the bubble so it doesn't trigger collisions again
       bubble.body.enable = false;
@@ -178,23 +159,40 @@ export class GamePlay extends Scene {
     }
   }
 
-  levelUp(backgroundColor: string) {
-    this.scene.stop();
+  levelUp(backgroundColor: string, level: number) {
+    this.scene.stop('GamePlay');
+    this.scene.start('LevelUp');
 
-    this.scene.launch('LevelUp');
-
-    // Listen for LevelUp dismissal
-    const handler = () => {
-      EventBus.removeListener('level-up-modal-done', handler);
-
-      // Restart scene, optionally pass new background color
-      this.scene.restart({ backgroundColor });
+    this.levelUpHandler = () => {
+      EventBus.removeListener('level-up-modal-done', this.levelUpHandler!);
+      this.scene.start('GamePlay', { backgroundColor, level });
     };
 
-    EventBus.on('level-up-modal-done', handler);
+    EventBus.on('level-up-modal-done', this.levelUpHandler);
   }
 
-  gameOver() {
-    this.scene.start('GameOver');
+  gameWon() {
+    this.gameResetCleanup();
+    this.scene.stop('GamePlay');
+    this.scene.start('GameWon');
+  }
+
+  gameResetCleanup() {
+    if (this._cleanedUp) return;
+    this._cleanedUp = true;
+
+    this.input.enabled = false;
+
+    this.bubbleSpawnTimer?.remove();
+    this.bubbleSpawnTimer = undefined;
+
+    this.time.removeAllEvents();
+    this.tweens.killAll();
+
+    if (this.levelUpHandler) {
+      EventBus.removeListener('level-up-modal-done', this.levelUpHandler);
+      this.levelUpHandler = undefined;
+    }
+    this.sound.stopAll();
   }
 }

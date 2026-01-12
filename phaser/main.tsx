@@ -1,6 +1,6 @@
 import { Boot } from './scenes/Boot';
-import { GameOver } from './scenes/GameOver';
-import { GamePlay } from './scenes/Game';
+import { GameWon } from './scenes/GameWon';
+import { GamePlay } from './scenes/GamePlay';
 import { AUTO, Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 import { LevelUp } from './scenes/LevelUp';
@@ -19,7 +19,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false, // set true if you want to see hitboxes
     },
   },
-  scene: [Boot, Preloader, GamePlay, GameOver, LevelUp],
+  scene: [Boot, Preloader, GamePlay, GameWon, LevelUp],
 };
 
 const StartGame = (parent: string) => {
