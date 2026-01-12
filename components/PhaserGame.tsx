@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useCallback,
 } from 'react';
 import Phaser from 'phaser';
 import StartGame from '@/phaser/main';
@@ -31,6 +32,7 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   const phaserRef = useRef<Phaser.Game | null>(null!);
   const gamePlaySceneRef = useRef<GamePlay | null>(null);
   const currentSceneRef = useRef<Phaser.Scene | null>(null);
+  const isPausedRef = useRef(isPaused);
 
   const {
     currentScore,
@@ -87,16 +89,6 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   }, [currentActiveScene, ref]);
 
   useEffect(() => {
-    EventBus.on('bubble-collided', addPoint);
-    EventBus.on('bubble-missed', missPoint);
-
-    return () => {
-      EventBus.removeListener('bubble-collided', addPoint);
-      EventBus.removeListener('bubble-missed', missPoint);
-    };
-  }, []);
-
-  useEffect(() => {
     if (currentLevel === 1) {
       return;
     }
@@ -128,31 +120,58 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
     }
   }, [isGameWon]);
 
-  const pause = () => {
-    if (!currentSceneRef.current) return;
+  useEffect(() => {
+    EventBus.on('bubble-collided', addPoint);
+    EventBus.on('bubble-missed', missPoint);
 
-    if (currentSceneRef.current.scene.key !== 'GamePlay') {
+    return () => {
+      EventBus.removeListener('bubble-collided', addPoint);
+      EventBus.removeListener('bubble-missed', missPoint);
+    };
+  }, [addPoint, missPoint]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  const pause = useCallback(() => {
+    if (
+      isPausedRef.current ||
+      !currentSceneRef.current ||
+      currentSceneRef.current.scene.key !== 'GamePlay' ||
+      !gamePlaySceneRef.current
+    ) {
       return;
     }
 
-    if (!isPaused && gamePlaySceneRef.current) {
-      gamePlaySceneRef.current.scene.pause('GamePlay');
-      setIsPaused(true);
-    }
-  };
+    gamePlaySceneRef.current.scene.pause('GamePlay');
+    setIsPaused(true);
+  }, []);
 
-  const resume = () => {
-    if (!currentSceneRef.current) return;
-
-    if (currentSceneRef.current.scene.key !== 'GamePlay') {
+  const resume = useCallback(() => {
+    if (
+      !isPausedRef.current ||
+      !currentSceneRef.current ||
+      currentSceneRef.current.scene.key !== 'GamePlay' ||
+      !gamePlaySceneRef.current
+    ) {
       return;
     }
 
-    if (isPaused && gamePlaySceneRef.current) {
-      gamePlaySceneRef.current.scene.resume('GamePlay');
-      setIsPaused(false);
-    }
-  };
+    gamePlaySceneRef.current.scene.resume('GamePlay');
+    setIsPaused(false);
+  }, []);
+
+  useEffect(() => {
+    // Supports GamePlay scene event that pauses the game when the GamePlay scene loses focus (i.e when the user clicks away).
+    // This prevents the game from continuing to run while user input is unavailable,
+    // avoiding confusing situations where the player sprite appears unresponsive.
+    EventBus.on('game-pause', pause);
+
+    return () => {
+      EventBus.removeListener('game-pause', pause);
+    };
+  }, [pause]);
 
   return (
     <div className="w-full flex flex-col items-center">

@@ -8,7 +8,6 @@ export class GamePlay extends Scene {
   title: GameObjects.Text | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
-  scenePaused = false;
   level: number = 1;
   bubbleSpawnTimer?: Phaser.Time.TimerEvent;
   cursors?: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
@@ -23,7 +22,6 @@ export class GamePlay extends Scene {
   init(data: { level: number; backgroundColor?: string }) {
     this.backgroundColor = data.backgroundColor ?? '#028af8';
     this.level = data.level ?? 1;
-    this.scenePaused = false;
   }
 
   create() {
@@ -67,6 +65,12 @@ export class GamePlay extends Scene {
       callback: this.spawnBubble,
       callbackScope: this,
       loop: true,
+    });
+
+    this.game.events.on(Phaser.Core.Events.BLUR, this.handleBlur, this);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.off(Phaser.Core.Events.BLUR, this.handleBlur, this);
     });
 
     EventBus.emit('current-scene-ready', this);
@@ -194,5 +198,14 @@ export class GamePlay extends Scene {
       this.levelUpHandler = undefined;
     }
     this.sound.stopAll();
+  }
+
+  // Pauses the game when the GamePlay scene loses focus (i.e when the user clicks away).
+  // This prevents the game from continuing to run while user input is unavailable,
+  // avoiding confusing situations where the player sprite appears unresponsive.
+  handleBlur() {
+    if (!this.scene.isActive() || this.scene.isPaused()) return;
+
+    EventBus.emit('game-pause');
   }
 }

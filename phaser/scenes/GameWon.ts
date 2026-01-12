@@ -18,40 +18,6 @@ export class GameWon extends Scene {
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor('#f5c16c');
 
-    // // Create the message
-    // const text = this.add
-    //   .text(width / 2, height / 2, `You Won!!!`, {
-    //     fontSize: '48px',
-    //     color: '#ffffff',
-    //     align: 'center',
-    //   })
-    //   .setOrigin(0.5);
-
-    // // Add some padding around the text
-    // const paddingX = 40;
-    // const paddingY = 40;
-
-    // // Measure the text
-    // const textBounds = text.getBounds();
-
-    // // Create the background rectangle based on text size + padding
-    // const modalBg = this.add
-    //   .graphics()
-    //   .fillStyle(0x000000, 0.7)
-    //   .fillRoundedRect(
-    //     textBounds.x - paddingX,
-    //     textBounds.y - paddingY,
-    //     textBounds.width + paddingX * 2,
-    //     textBounds.height + paddingY * 2,
-    //     20,
-    //   );
-
-    // // Keep text block above everything else
-    // modalBg.setDepth(11);
-
-    // // Make sure text appears on top
-    // text.setDepth(modalBg.depth + 1);
-
     // Bubble group
     this.bubbles = this.physics.add.group({
       classType: Phaser.Physics.Arcade.Sprite,
@@ -88,12 +54,6 @@ export class GameWon extends Scene {
       callback: () => {
         this.unicorn?.setVelocityX(500);
       },
-    });
-
-    // Resume on click / touch
-    this.input.once('pointerdown', () => {
-      EventBus.emit('level-up-modal-done');
-      this.scene.stop();
     });
 
     // Background overlay
@@ -168,20 +128,16 @@ export class GameWon extends Scene {
     // Tell React the game is restarting
     EventBus.emit('game-restart');
 
-    // Stop the GameWon scene
     this.scene.stop('GameWon');
     //TODO: Do any additional cleanup needed for GameWon logic
 
-    // Stop and remove the old scene
     if (this.scene.get('GamePlay')) {
       this.scene.stop('GamePlay');
       this.scene.remove('GamePlay'); // ensures Phaser creates a fresh instance
     }
 
-    // Add a fresh GamePlay scene
     this.scene.add('GamePlay', GamePlay, true, { level: 1 });
 
-    // Start the fresh GamePlay scene
     this.scene.start('GamePlay', { level: 1 });
   }
 }
