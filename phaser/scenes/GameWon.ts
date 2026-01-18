@@ -8,6 +8,8 @@ export class GameWon extends Scene {
   gameWonText: Phaser.GameObjects.Text | null = null;
   unicorn: Phaser.Physics.Arcade.Sprite | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
+  bubbleTimer?: Phaser.Time.TimerEvent;
+  bounceTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super('GameWon');
@@ -21,11 +23,10 @@ export class GameWon extends Scene {
     // Bubble group
     this.bubbles = this.physics.add.group({
       classType: Phaser.Physics.Arcade.Sprite,
-      runChildUpdate: true,
     });
 
     // Spawn bubbles repeatedly
-    this.time.addEvent({
+    this.bubbleTimer = this.time.addEvent({
       delay: 200,
       callback: this.spawnBubble,
       callbackScope: this,
@@ -48,7 +49,7 @@ export class GameWon extends Scene {
     this.unicorn.setVelocityY(-600);
     this.unicorn.setVelocityX(700);
 
-    this.time.addEvent({
+    this.bounceTimer = this.time.addEvent({
       delay: 8000,
       loop: true,
       callback: () => {
@@ -93,6 +94,11 @@ export class GameWon extends Scene {
       this.playAgain();
     });
 
+    this.events.once('shutdown', () => {
+      this.bubbleTimer?.remove();
+      this.bounceTimer?.remove();
+    });
+
     EventBus.emit('current-scene-ready', this);
   }
 
@@ -106,7 +112,7 @@ export class GameWon extends Scene {
     if (this.bubbles) {
       this.bubbles.getChildren().forEach((bubble) => {
         const b = bubble as Phaser.Physics.Arcade.Sprite;
-        if (b.y > this.scale.height + b.y) {
+        if (b.y > this.scale.height + b.height) {
           b.destroy();
         }
       });
@@ -116,7 +122,7 @@ export class GameWon extends Scene {
   spawnBubble() {
     if (this.bubbles) {
       const x = Phaser.Math.Between(50, this.scale.width - 50);
-      const bubble = this.bubbles.create(x, 0, 'bubble');
+      const bubble = this.bubbles.create(x, -100, 'bubble');
 
       bubble.setDepth(1);
       bubble.setVelocityY(150);
@@ -125,19 +131,9 @@ export class GameWon extends Scene {
   }
 
   playAgain() {
-    // Tell React the game is restarting
     EventBus.emit('game-restart');
 
     this.scene.stop('GameWon');
-    //TODO: Do any additional cleanup needed for GameWon logic
-
-    if (this.scene.get('GamePlay')) {
-      this.scene.stop('GamePlay');
-      this.scene.remove('GamePlay'); // ensures Phaser creates a fresh instance
-    }
-
-    this.scene.add('GamePlay', GamePlay, true, { level: 1 });
-
     this.scene.start('GamePlay', { level: 1 });
   }
 }

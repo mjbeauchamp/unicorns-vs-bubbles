@@ -73,6 +73,10 @@ export class GamePlay extends Scene {
       this.game.events.off(Phaser.Core.Events.BLUR, this.handleBlur, this);
     });
 
+    this.events.once('shutdown', () => {
+      this.bubbleSpawnTimer?.remove();
+    });
+
     EventBus.emit('current-scene-ready', this);
   }
 

@@ -14,6 +14,7 @@ import { EventBus } from '@/phaser/EventBus';
 import { useGame } from '@/contexts/GameContext';
 import { GamePlay } from '@/phaser/scenes/GamePlay';
 import { LEVELS } from '@/game/config/levels';
+import { LevelUp } from '@/phaser/scenes/LevelUp';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -29,6 +30,8 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   ref,
 ) {
   const [isPaused, setIsPaused] = useState(false);
+  const [currentSceneKey, setCurrentSceneKey] = useState('');
+
   const phaserRef = useRef<Phaser.Game | null>(null!);
   const gamePlaySceneRef = useRef<GamePlay | null>(null);
   const currentSceneRef = useRef<Phaser.Scene | null>(null);
@@ -70,6 +73,7 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
         gamePlaySceneRef.current = scene_instance;
       }
       currentSceneRef.current = scene_instance;
+      setCurrentSceneKey(scene_instance.scene.key);
 
       if (currentActiveScene && typeof currentActiveScene === 'function') {
         currentActiveScene(scene_instance);
@@ -174,10 +178,10 @@ const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame(
   }, [pause]);
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-center py-24">
       <div className="primary-content-container relative min-w-[fit-content]">
-        {!isGameWon && (
-          <div>
+        {!isGameWon && currentSceneKey == 'GamePlay' && (
+          <div className="w-full rounded-tl rounded-tr bg-color-primary">
             <h1>
               LEVEL: <span>{currentLevel}</span>
             </h1>

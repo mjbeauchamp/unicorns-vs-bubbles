@@ -15,5 +15,5 @@ export type LevelConfig = {
 export const LEVELS: LevelConfig[] = [
   { level: 1, targetScore: 2, backgroundColor: '#028af8' },
   { level: 2, targetScore: 3, backgroundColor: '#d5e3cc' },
-  { level: 3, targetScore: 3, backgroundColor: '#f5c16c' },
+  // { level: 3, targetScore: 3, backgroundColor: '#f5c16c' },
 ];

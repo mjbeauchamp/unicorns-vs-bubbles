@@ -6,6 +6,8 @@ export class LevelUp extends Scene {
   unicorn: Phaser.Physics.Arcade.Sprite | null = null;
   bubbles: Phaser.Physics.Arcade.Group | null = null;
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
+  bubbleTimer?: Phaser.Time.TimerEvent;
+  bounceTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super('LevelUp');
@@ -53,11 +55,10 @@ export class LevelUp extends Scene {
     // Bubble group
     this.bubbles = this.physics.add.group({
       classType: Phaser.Physics.Arcade.Sprite,
-      runChildUpdate: true,
     });
 
     // Spawn bubbles repeatedly
-    this.time.addEvent({
+    this.bubbleTimer = this.time.addEvent({
       delay: 200,
       callback: this.spawnBubble,
       callbackScope: this,
@@ -80,7 +81,7 @@ export class LevelUp extends Scene {
     this.unicorn.setVelocityY(-600);
     this.unicorn.setVelocityX(700);
 
-    this.time.addEvent({
+    this.bounceTimer = this.time.addEvent({
       delay: 8000,
       loop: true,
       callback: () => {
@@ -91,7 +92,14 @@ export class LevelUp extends Scene {
     // Resume on click / touch
     this.input.once('pointerdown', () => {
       EventBus.emit('level-up-modal-done');
+      this.bubbleTimer?.remove();
+      this.bounceTimer?.remove();
       this.scene.stop();
+    });
+
+    this.events.once('shutdown', () => {
+      this.bubbleTimer?.remove();
+      this.bounceTimer?.remove();
     });
 
     EventBus.emit('current-scene-ready', this);
@@ -107,7 +115,7 @@ export class LevelUp extends Scene {
     if (this.bubbles) {
       this.bubbles.getChildren().forEach((bubble) => {
         const b = bubble as Phaser.Physics.Arcade.Sprite;
-        if (b.y > this.scale.height + b.y) {
+        if (b.y > this.scale.height + b.height) {
           b.destroy();
         }
       });
@@ -117,7 +125,7 @@ export class LevelUp extends Scene {
   spawnBubble() {
     if (this.bubbles) {
       const x = Phaser.Math.Between(50, this.scale.width - 50);
-      const bubble = this.bubbles.create(x, 0, 'bubble');
+      const bubble = this.bubbles.create(x, -100, 'bubble');
 
       bubble.setDepth(1);
       bubble.setVelocityY(150);
